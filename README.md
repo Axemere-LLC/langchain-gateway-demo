@@ -78,8 +78,8 @@ each gateway variant (Managed, Self-Hosted, Free).
 
 ```bash
 # Clone and enter the repo
-git clone https://github.com/axemere/lclg
-cd lclg
+git clone https://github.com/Axemere-LLC/langchain-gateway-demo
+cd langchain-gateway-demo
 
 # Install (requires Python 3.11+)
 make install
