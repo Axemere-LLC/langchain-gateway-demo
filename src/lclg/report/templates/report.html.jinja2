@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ result.topic }} — LCLG Research Report</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #6c8ef7;
+    --accent2: #a78bfa;
+    --text: #e2e8f0;
+    --text-muted: #8892a4;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --openai: #74aa9c;
+    --anthropic: #d97757;
+    --google: #4285f4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* Header */
+  .report-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .report-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .meta-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+  .meta-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .meta-card .value { font-size: 1.1rem; font-weight: 600; margin-top: 0.2rem; }
+  .meta-card .value.cost { color: var(--green); }
+  .meta-card .value.mode { font-size: 0.85rem; font-family: monospace; color: var(--accent); }
+  .meta-card .value.tokens { font-size: 0.95rem; }
+
+  /* Section headings */
+  .section { margin-bottom: 3rem; }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Pipeline diagram */
+  .diagram-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    overflow-x: auto;
+    cursor: zoom-in;
+    transition: border-color 0.15s;
+  }
+  .diagram-wrap:hover { border-color: var(--accent); }
+  .diagram-hint {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+  .mermaid { display: flex; justify-content: center; }
+
+  /* Diagram modal */
+  #diagram-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 1000;
+    cursor: zoom-out;
+    overflow: auto;
+    padding: 2rem;
+  }
+  #diagram-modal-inner {
+    max-width: 95vw;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+  #diagram-modal-inner svg { width: 100%; height: auto; }
+
+  /* Research accordions */
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  details[open] { border-color: var(--accent); }
+  summary {
+    padding: 0.9rem 1.25rem;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    list-style: none;
+    user-select: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "›";
+    font-size: 1.2rem;
+    color: var(--accent);
+    transition: transform 0.2s;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  .source-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .source-web { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid var(--green); }
+  .source-model { background: rgba(167,139,250,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+  .accordion-body {
+    padding: 0 1.25rem 1.25rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .source-urls { margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); }
+  .source-urls a { font-size: 0.8rem; }
+
+  /* Synthesis prose */
+  .prose {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    line-height: 1.8;
+  }
+
+  /* Shared markdown rendering styles */
+  .md-render p { margin-bottom: 0.75rem; }
+  .md-render p:last-child { margin-bottom: 0; }
+  .md-render h1, .md-render h2 { font-size: 1rem; font-weight: 700; margin: 1.2rem 0 0.4rem; color: var(--accent); }
+  .md-render h3 { font-size: 0.9rem; font-weight: 600; margin: 0.9rem 0 0.3rem; color: var(--accent2); }
+  .md-render h4 { font-size: 0.85rem; font-weight: 600; margin: 0.7rem 0 0.25rem; }
+  .md-render ul, .md-render ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+  .md-render li { margin-bottom: 0.25rem; }
+  .md-render strong { color: var(--text); font-weight: 600; }
+  .md-render em { font-style: italic; }
+  .md-render code { font-family: "SF Mono","Fira Code",monospace; font-size: 0.8em; color: var(--accent2); background: var(--surface2); padding: 0.1em 0.3em; border-radius: 3px; }
+  .md-render pre { background: var(--surface2); padding: 0.8rem 1rem; border-radius: 6px; overflow-x: auto; margin-bottom: 0.75rem; }
+  .md-render pre code { background: none; padding: 0; }
+  .md-render blockquote { border-left: 3px solid var(--border); padding-left: 1rem; color: var(--text-muted); margin: 0 0 0.75rem; }
+  .md-render hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .md-render table { border-collapse: collapse; width: 100%; margin-bottom: 0.75rem; font-size: 0.85rem; }
+  .md-render th { background: var(--surface2); padding: 0.4rem 0.7rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .md-render td { padding: 0.4rem 0.7rem; border-bottom: 1px solid var(--border); }
+
+  /* Provider comparison */
+  .provider-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 700px) { .provider-grid { grid-template-columns: 1fr; } }
+  .provider-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .provider-header {
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .provider-openai .provider-header { background: rgba(116,170,156,0.2); border-bottom: 2px solid var(--openai); }
+  .provider-anthropic .provider-header { background: rgba(217,119,87,0.2); border-bottom: 2px solid var(--anthropic); }
+  .provider-google .provider-header { background: rgba(66,133,244,0.2); border-bottom: 2px solid var(--google); }
+  .provider-stats {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface2);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .provider-stat { white-space: nowrap; }
+  .provider-stat strong { color: var(--text); }
+  .provider-body {
+    padding: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--surface);
+    flex: 1;
+  }
+
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  .data-table th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table tfoot td {
+    font-weight: 700;
+    background: var(--surface2);
+    color: var(--green);
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  code { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8em; color: var(--accent2); }
+
+  /* Final report */
+  .report-prose {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    line-height: 1.85;
+  }
+
+  /* Footer */
+  .report-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header class="report-header">
+    <h1>{{ result.topic }}</h1>
+    <div class="meta-grid">
+      <div class="meta-card">
+        <div class="label">Run ID</div>
+        <div class="value"><code>{{ result.run_id }}</code></div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Timestamp</div>
+        <div class="value" style="font-size:0.9rem;">{{ result.started_at | format_timestamp }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Total Cost</div>
+        <div class="value cost">${{ "%.5f" | format(result.total_cost_usd) }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Latency</div>
+        <div class="value">{{ result.total_latency_ms | format_duration }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Mode</div>
+        <div class="value mode">{{ result.mode }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Sub-questions</div>
+        <div class="value">{{ result.sub_questions | length }}</div>
+      </div>
+      {% if result.calls %}
+      <div class="meta-card">
+        <div class="label">Tokens In</div>
+        <div class="value tokens">{{ "{:,}".format(result.calls | sum(attribute='tokens_in')) }}</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Tokens Out</div>
+        <div class="value tokens">{{ "{:,}".format(result.calls | sum(attribute='tokens_out')) }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Pipeline Diagram -->
+  <section class="section">
+    <div class="section-title">Pipeline</div>
+    <div class="diagram-wrap" id="diagram-wrap" title="Double-click to enlarge">
+      <div class="mermaid">
+flowchart LR
+  Planner["PlannerAgent<br>gpt-4o-mini"] --> Research
+  subgraph Research["Parallel Research × {{ result.sub_questions | length }}"]
+    {% for q in result.sub_questions %}R{{ loop.index0 }}["{{ q[:35] }}{% if q|length > 35 %}...{% endif %}"]
+    {% endfor %}
+  end
+  Research --> Analyst["AnalysisAgent<br>mistral-large-latest"]
+  Analyst --> Comparator
+  subgraph Comparator["Multi-Provider Comparison"]
+    OAI["OpenAI<br>gpt-4o"]
+    ANT["Anthropic<br>claude-sonnet-4-6"]
+    GEM["Gemini<br>gemini-1.5-pro"]
+  end
+  Comparator --> Reporter["ReportAgent<br>gpt-4o"]
+  Reporter --> Output[("Report")]
+      </div>
+    </div>
+    <p class="diagram-hint">Double-click to enlarge</p>
+  </section>
+
+  <!-- Diagram modal -->
+  <div id="diagram-modal">
+    <div id="diagram-modal-inner"></div>
+  </div>
+
+  <!-- Research Findings -->
+  <section class="section">
+    <div class="section-title">Research Findings</div>
+    {% for r in result.research %}
+    <details {% if loop.first %}open{% endif %}>
+      <summary>
+        {{ r.question }}
+        {% if r.source == 'web_search' %}
+          <span class="source-badge source-web">Web Search</span>
+        {% else %}
+          <span class="source-badge source-model">Model Knowledge</span>
+        {% endif %}
+      </summary>
+      <div class="accordion-body md-render">{{ r.answer }}
+        {% if r.urls %}
+        <div class="source-urls">
+          Sources:
+          {% for url in r.urls %}<a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </details>
+    {% endfor %}
+  </section>
+
+  <!-- Analysis Synthesis -->
+  <section class="section">
+    <div class="section-title">Analysis Synthesis</div>
+    <div class="prose md-render">{{ result.synthesis }}</div>
+  </section>
+
+  <!-- Provider Comparison -->
+  {% if result.comparison and result.comparison.results %}
+  <section class="section">
+    <div class="section-title">Provider Comparison</div>
+    <div class="provider-grid">
+      {% for pr in result.comparison.results %}
+      <div class="provider-card provider-{{ pr.provider }}">
+        <div class="provider-header">
+          <span>{{ pr.provider | title }}</span>
+          <span style="font-size:0.75rem;font-weight:400;opacity:0.8;">{{ pr.model }}</span>
+        </div>
+        <div class="provider-stats">
+          <span class="provider-stat">⏱ <strong>{{ pr.latency_ms | format_duration }}</strong></span>
+          <span class="provider-stat">↑ <strong>{{ "{:,}".format(pr.tokens_in) }}</strong> tok</span>
+          <span class="provider-stat">↓ <strong>{{ "{:,}".format(pr.tokens_out) }}</strong> tok</span>
+          <span class="provider-stat">💰 <strong>${{ pr.cost_usd }}</strong></span>
+        </div>
+        <div class="provider-body md-render">{{ pr.response }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Final Report -->
+  <section class="section">
+    <div class="section-title">Executive Report</div>
+    <div class="report-prose md-render">{{ result.report }}</div>
+  </section>
+
+  <!-- Cost Summary -->
+  <section class="section">
+    <div class="section-title">Cost Summary</div>
+    {% if result.calls %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agent</th><th>Provider</th><th>Model</th>
+            <th>Tokens In</th><th>Tokens Out</th><th>Cost (USD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for call in result.calls %}
+          <tr>
+            <td>{{ call.agent }}</td>
+            <td>{{ call.provider }}</td>
+            <td><code>{{ call.model }}</code></td>
+            <td>{{ "{:,}".format(call.tokens_in) }}</td>
+            <td>{{ "{:,}".format(call.tokens_out) }}</td>
+            <td>${{ call.cost_usd }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total ({{ result.calls | length }} calls)</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_in')) }}</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_out')) }}</td>
+            <td>${{ "%.5f" | format(result.total_cost_usd) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Agent Summary -->
+  {% if agent_summary %}
+  <section class="section">
+    <div class="section-title">By Agent</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agent</th><th>Calls</th><th>Provider(s)</th>
+            <th>Tokens In</th><th>Tokens Out</th><th>Cost (USD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in agent_summary %}
+          <tr>
+            <td>{{ row.agent }}</td>
+            <td>{{ row.calls }}</td>
+            <td style="color:var(--text-muted); font-size:0.8rem;">{{ row.providers }}</td>
+            <td>{{ "{:,}".format(row.tokens_in) }}</td>
+            <td>{{ "{:,}".format(row.tokens_out) }}</td>
+            <td>${{ "%.5f" | format(row.cost_usd) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_in')) }}</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_out')) }}</td>
+            <td>${{ "%.5f" | format(result.total_cost_usd) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Attribution Breakdown -->
+  <section class="section">
+    <div class="section-title">Attribution Breakdown</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agent</th><th>Provider</th><th>Model</th><th>Workload</th>
+            <th>Tokens In</th><th>Tokens Out</th><th>Latency</th><th>Cost (USD)</th>
+            <th>Record ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for call in result.calls %}
+          <tr>
+            <td>{{ call.agent }}</td>
+            <td>{{ call.provider }}</td>
+            <td><code>{{ call.model }}</code></td>
+            <td><code>{{ call.workload_id }}</code></td>
+            <td>{{ "{:,}".format(call.tokens_in) }}</td>
+            <td>{{ "{:,}".format(call.tokens_out) }}</td>
+            <td>{{ call.latency_ms | format_duration }}</td>
+            <td>${{ call.cost_usd }}</td>
+            <td><code title="{{ call.record_id }}">{{ call.record_id[:8] if call.record_id else '—' }}{% if call.record_id %}…{% endif %}</code></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">Total</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_in')) }}</td>
+            <td>{{ "{:,}".format(result.calls | sum(attribute='tokens_out')) }}</td>
+            <td></td>
+            <td>${{ "%.5f" | format(result.total_cost_usd) }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <footer class="report-footer">
+    Generated by <strong>LCLG</strong> · Powered by <strong>Axemere Gateway</strong> · Run <code>{{ result.run_id }}</code>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({ theme: 'dark', startOnLoad: true });
+
+  // Render all markdown sections after mermaid (which also runs on DOMContentLoaded)
+  document.addEventListener('DOMContentLoaded', () => {
+    // Markdown rendering
+    document.querySelectorAll('.md-render').forEach(el => {
+      const raw = el.textContent;
+      if (raw.trim()) {
+        el.innerHTML = marked.parse(raw);
+      }
+    });
+
+    // Diagram modal on double-click
+    const wrap = document.getElementById('diagram-wrap');
+    const modal = document.getElementById('diagram-modal');
+    const inner = document.getElementById('diagram-modal-inner');
+
+    wrap.addEventListener('dblclick', () => {
+      const svg = wrap.querySelector('svg');
+      if (!svg) return;
+      inner.innerHTML = '';
+      const clone = svg.cloneNode(true);
+      clone.style.width = '100%';
+      clone.style.height = 'auto';
+      clone.style.maxHeight = '85vh';
+      inner.appendChild(clone);
+      modal.style.display = 'block';
+    });
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') modal.style.display = 'none';
+    });
+  });
+</script>
+</body>
+</html>

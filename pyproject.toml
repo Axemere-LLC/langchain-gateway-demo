@@ -1,0 +1,106 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lclg"
+version = "0.1.0"
+description = "LangChain + Axemere Gateway multi-agent research pipeline"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    # LangChain core + provider integrations (pinned to the 1.x series)
+    "langchain-core>=1.4.7",
+    "langchain-openai>=1.1.10",
+    "langchain-anthropic>=1.3.4",
+    "langchain-mistralai>=1.1.5",
+    "langchain-community>=0.4.1",
+    # Web search tool for ResearchAgent (optional at runtime — falls back gracefully)
+    "langchain-tavily>=0.2.18",
+    # Report rendering
+    "jinja2>=3.1.6",
+    # CLI
+    "click>=8.1.8",
+    # Environment variable loading
+    "python-dotenv>=1.1.0",
+    # HTTP client (also used by Axemere Gateway SDK)
+    "httpx>=0.28.1",
+    # Axemere Gateway SDK
+    "axemere-gateway>=0.1.0",
+    "axemere-gateway-langchain>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1.0",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.17",
+    "mypy>=2.1.0",
+    # Type stubs
+    "types-jinja2>=2.11.9",
+]
+
+[project.scripts]
+lclg = "lclg.__main__:cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lclg"]
+
+# ---------------------------------------------------------------------------
+# Ruff — linting and formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+# ---------------------------------------------------------------------------
+# Mypy — strict type checking
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+mypy_path = "src"
+# LangChain's Runnable generic has complex variance that is impractical to
+# annotate fully in user-facing code. Suppress type-arg only; all other checks remain.
+disable_error_code = ["type-arg"]
+
+# LangChain and provider integrations use Pydantic v2 internals that mypy
+# cannot fully type-check without a plugin. Disable strict checks for imports
+# of those packages only; our own code stays fully strict.
+[[tool.mypy.overrides]]
+module = [
+    "langchain_openai.*",
+    "langchain_anthropic.*",
+    "langchain_mistralai.*",
+    "langchain_tavily.*",
+    "langchain_community.*",
+    "axemere.gateway.*",
+]
+ignore_missing_imports = true
+ignore_errors = true
+
+# Mode and builder files return ChatAiGateway / provider models whose types mypy
+# resolves as Any (axemere.gateway.* and langchain_* have ignore_errors = true).
+[[tool.mypy.overrides]]
+module = [
+    "lclg.modes.proxy_managed",
+    "lclg.modes.proxy_selfhosted",
+    "lclg.modes.explicit_managed",
+    "lclg.modes.explicit_selfhosted",
+    "lclg.agents._llm",
+]
+disable_error_code = ["call-arg", "return-value", "no-any-return", "unused-ignore"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -1,0 +1,26 @@
+# Claude Code internal configuration — never commit
+CLAUDE.md
+.claude/
+
+# Internal planning specs — live in the private wrapper repo
+docs/specs/
+
+# macOS metadata
+.DS_Store
+
+# Local Python version/virtualenv selection (contains personal env names)
+.python-version
+
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+*.egg-info/
+output/*
+!output/.gitkeep
