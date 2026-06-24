@@ -143,7 +143,9 @@ output/
 
 ## Example output
 
-The HTML report includes:
+**[→ View a live example report](examples/llm-production-costs/)** — *The hidden costs of running LLMs in production: latency, token economics, and provider lock-in*
+
+The report includes:
 
 - **Pipeline diagram** — Mermaid flowchart of the exact run
 - **Research findings** — per sub-question, labelled Web Search or Model Knowledge
@@ -151,6 +153,8 @@ The HTML report includes:
 - **Provider comparison** — side-by-side responses + latency + cost from three providers
 - **Executive report** — final synthesis from the Reporter agent
 - **Attribution breakdown** — every gateway call with workload, record ID, and cost
+
+The [HTML version](examples/llm-production-costs/report.html) (download and open locally) renders with syntax highlighting, a Mermaid pipeline diagram, and a full cost dashboard.
 
 ---
 
@@ -183,6 +187,7 @@ lclg/
 │   └── report/            # HTML + Markdown report rendering
 ├── tests/                 # pytest test suite (49 tests)
 ├── docs/                  # Architecture, agents, integration guide, prerequisites
+├── examples/              # Curated example reports (committed)
 ├── output/                # Generated reports (gitignored)
 ├── .env.example           # All env vars with descriptions
 └── Makefile               # install, run, test, lint, report, clean, help
