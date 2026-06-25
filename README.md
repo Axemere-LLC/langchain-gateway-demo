@@ -143,7 +143,9 @@ output/
 
 ## Example output
 
-**[→ View a live example report](examples/llm-production-costs/)** — *The hidden costs of running LLMs in production: latency, token economics, and provider lock-in*
+**[→ View example report (rendered HTML)](https://axemere-llc.github.io/langchain-gateway-demo/examples/llm-production-costs/report.html)** — *The hidden costs of running LLMs in production: latency, token economics, and provider lock-in*
+
+Also viewable [on GitHub](examples/llm-production-costs/) (Markdown, renders in browser).
 
 The report includes:
 
