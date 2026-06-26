@@ -75,7 +75,7 @@ def build_comparator_chain(cfg: LCLGConfig) -> RunnableLambda[Any, ComparatorRes
             config=cfg.gateway,
             workload_id=WORKLOAD_COMPARATOR,
             labels=labels,
-            max_tokens=1024,
+            max_tokens=1024,  # one provider response per call; sized for a full paragraph
         )
 
         def run(prompt: str) -> ProviderResult:

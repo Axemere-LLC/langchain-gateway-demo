@@ -43,7 +43,7 @@ def build_planner_chain(cfg: LCLGConfig) -> Runnable:
         model=MODEL,
         workload_id=WORKLOAD_PLANNER,
         labels={"agent": "planner"},
-        max_tokens=512,
+        max_tokens=512,  # short JSON array of sub-questions; well under 256 default
     )
 
     prompt = ChatPromptTemplate.from_messages([("system", _SYSTEM), ("human", _HUMAN)])

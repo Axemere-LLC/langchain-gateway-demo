@@ -51,7 +51,7 @@ def build_analyst_chain(cfg: LCLGConfig) -> Runnable:
         model=MODEL,
         workload_id=WORKLOAD_ANALYST,
         labels={"agent": "analyst"},
-        max_tokens=1024,
+        max_tokens=1024,  # 400-600 word synthesis (matches prompt instruction)
     )
 
     prompt = ChatPromptTemplate.from_messages([("system", _SYSTEM), ("human", _HUMAN)])

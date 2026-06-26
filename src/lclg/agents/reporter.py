@@ -62,7 +62,7 @@ def build_reporter_chain(cfg: LCLGConfig) -> Runnable:
         model=MODEL,
         workload_id=WORKLOAD_REPORTER,
         labels={"agent": "reporter"},
-        max_tokens=2048,
+        max_tokens=2048,  # full multi-section Markdown report; largest output in the pipeline
     )
 
     prompt = ChatPromptTemplate.from_messages([("system", _SYSTEM), ("human", _HUMAN)])

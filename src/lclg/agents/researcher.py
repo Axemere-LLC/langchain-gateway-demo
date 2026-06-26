@@ -74,7 +74,7 @@ def build_researcher_chain(cfg: LCLGConfig) -> Runnable:
         model=MODEL,
         workload_id=WORKLOAD_RESEARCHER,
         labels={"agent": "researcher"},
-        max_tokens=768,
+        max_tokens=768,  # one focused answer ~300 words; 256 default would truncate
     )
 
     if tavily_key:

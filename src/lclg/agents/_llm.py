@@ -27,6 +27,10 @@ def build_llm(
     model: str,
     workload_id: str,
     labels: dict[str, str] | None = None,
+    # [AXEMERE] max_tokens: SDK default is 256 (intentionally conservative to avoid
+    # runaway cost on truncated or repeated outputs). This helper defaults to 1024 as
+    # a safer floor for most agents. Agents with heavier output (reporter) or lighter
+    # output (planner) should pass their own value explicitly — see each agent file.
     max_tokens: int = 1024,
 ) -> BaseChatModel:
     """Return a mode-appropriate LangChain chat model for the given provider.
