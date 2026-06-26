@@ -35,7 +35,12 @@ def _mock_chat_ai_gateway(provider: str, model: str, **kw) -> MagicMock:
 
 class TestComparatorChain:
     def test_returns_comparator_result(self, cfg: LCLGConfig) -> None:
-        with patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway):
+        with (
+            patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway),
+            patch(
+                "lclg.agents.comparator._ChatAiGatewayNoThinking", side_effect=_mock_chat_ai_gateway
+            ),
+        ):
             chain = build_comparator_chain(cfg)
             result = chain.invoke({"prompt": "Summarise this."})
 
@@ -43,7 +48,12 @@ class TestComparatorChain:
         assert len(result.results) == len(PROVIDERS)
 
     def test_all_three_providers_present(self, cfg: LCLGConfig) -> None:
-        with patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway):
+        with (
+            patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway),
+            patch(
+                "lclg.agents.comparator._ChatAiGatewayNoThinking", side_effect=_mock_chat_ai_gateway
+            ),
+        ):
             chain = build_comparator_chain(cfg)
             result = chain.invoke({"prompt": "test"})
 
@@ -53,7 +63,12 @@ class TestComparatorChain:
         assert "google" in provider_names
 
     def test_captures_latency(self, cfg: LCLGConfig) -> None:
-        with patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway):
+        with (
+            patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway),
+            patch(
+                "lclg.agents.comparator._ChatAiGatewayNoThinking", side_effect=_mock_chat_ai_gateway
+            ),
+        ):
             chain = build_comparator_chain(cfg)
             result = chain.invoke({"prompt": "test"})
 
@@ -61,7 +76,12 @@ class TestComparatorChain:
             assert pr.latency_ms >= 0
 
     def test_captures_cost(self, cfg: LCLGConfig) -> None:
-        with patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway):
+        with (
+            patch("lclg.agents.comparator.ChatAiGateway", side_effect=_mock_chat_ai_gateway),
+            patch(
+                "lclg.agents.comparator._ChatAiGatewayNoThinking", side_effect=_mock_chat_ai_gateway
+            ),
+        ):
             chain = build_comparator_chain(cfg)
             result = chain.invoke({"prompt": "test"})
 

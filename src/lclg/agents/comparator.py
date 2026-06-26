@@ -11,10 +11,29 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from axemere.gateway.langchain import ChatAiGateway
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 
 from lclg.config import WORKLOAD_COMPARATOR, LCLGConfig
+
+
+# [AXEMERE] Gemini thinking workaround
+# gemini-2.5-flash uses "thinking tokens" that consume the maxOutputTokens budget
+# silently before generating visible output. With max_tokens=1024, ~984 tokens go to
+# thinking, leaving only ~40 visible — the response appears cut off. With higher limits
+# (4096+), the gateway connector timeout fires before Gemini finishes thinking.
+# Workaround: subclass ChatAiGateway and inject thinkingConfig.thinkingBudget=0 into
+# the Gemini generationConfig, which disables thinking for this call.
+# SDK gap: the Python SDK has no first-class thinkingConfig parameter — this subclass
+# can be removed once the SDK exposes it. Track in SDK backlog.
+class _ChatAiGatewayNoThinking(ChatAiGateway):
+    def _messages_to_gemini(
+        self, messages: list[BaseMessage]
+    ) -> tuple[dict[str, Any] | None, list[dict[str, Any]], dict[str, Any]]:
+        system_instruction, contents, generation_config = super()._messages_to_gemini(messages)
+        generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+        return system_instruction, contents, generation_config
+
 
 # [AXEMERE] multi-provider comparison via RunnableParallel
 # RunnableParallel fans the same prompt to three providers simultaneously.
@@ -69,7 +88,9 @@ def build_comparator_chain(cfg: LCLGConfig) -> RunnableLambda[Any, ComparatorRes
         labels: dict[str, str] = {"agent": "comparator", "provider": provider}
         if cfg.run_id:
             labels["run_id"] = cfg.run_id
-        llm = ChatAiGateway(
+        # Use the no-thinking subclass for Google/Gemini; standard class for all others.
+        llm_cls = _ChatAiGatewayNoThinking if provider == "google" else ChatAiGateway
+        llm = llm_cls(
             provider=provider,
             model=model,
             config=cfg.gateway,
